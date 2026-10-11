@@ -34,6 +34,9 @@ examples = [
     ["na wa for this nepa o, light don go again since morning"],
     ["i dey go market later"],
     ["dis una network no dey work at all, wetin be this"],
+    ["wahala dey o"],
+    ["massive love"],
+    ["no wham na, make i dey go"],
 ]
 
 demo = gr.Interface(
