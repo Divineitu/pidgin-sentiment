@@ -1,0 +1,14 @@
+# tested with python 3.12 (gensim doesn't install on 3.14 yet)
+pandas
+numpy
+scikit-learn
+matplotlib
+seaborn
+gensim
+torch
+transformers
+datasets
+accelerate
+nbconvert
+ipykernel
+gradio
