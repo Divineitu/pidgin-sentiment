@@ -12,7 +12,7 @@ from transformers import AutoModelForSequenceClassification, AutoTokenizer
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "src"))
 from preprocess import clean_text
 
-MODEL_ID = os.environ.get("MODEL_ID", "Divineitu/pidgin-sentiment")
+MODEL_ID = os.environ.get("MODEL_ID", "DivineItu/pidgin-sentiment")
 
 tokenizer = AutoTokenizer.from_pretrained(MODEL_ID)
 model = AutoModelForSequenceClassification.from_pretrained(MODEL_ID)
