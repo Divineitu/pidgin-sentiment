@@ -97,6 +97,20 @@ Clean test (tweets never seen in training), mean of 3 seeds for E3–E8:
 Scores on dev and on the official test are in `results/experiments.csv`. Every model scores higher on the
 official test than on the clean test (e.g. E7: 0.485 vs 0.464), which shows the effect of the leakage.
 
+### Sanity check against the published results
+
+On the official test set, with the weighted F1 the AfriSenti paper uses, my numbers are close to the
+published Pidgin baselines (Muhammad et al., 2023), and the ranking is the same:
+
+| model | AfriSenti paper | mine (official test) |
+|---|---|---|
+| AfriBERTa-large | 62.3 | 63.8 |
+| XLM-R-base | 63.8 | 65.0 |
+| AfroXLMR-base | 67.6 | 66.7 |
+
+So the pipeline behaves as expected. The clean test then shows the real scores are lower once the
+duplicated tweets are removed.
+
 ### What I learned
 
 - **Pretrained transformers beat the baseline, the BiLSTMs didn't.** With only ~4.5k tweets the BiLSTM has
