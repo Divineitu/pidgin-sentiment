@@ -146,9 +146,27 @@ See `notebooks/05_error_analysis.ipynb`.
 
 ## Web app
 
-A Gradio app (`app/app.py`) on Hugging Face Spaces. It loads the fine-tuned model from the Hub, cleans the
-input with the same `clean_text` used in training, runs the model and shows the probability of each class.
-To deploy your own copy: `hf auth login`, then `python app/deploy_space.py`.
+Hugging Face only hosts Gradio Spaces on a paid plan now, but static Spaces are free, so the live app is a
+single HTML page (`app/static/index.html`) that runs the model **in the browser** with
+[transformers.js](https://huggingface.co/docs/transformers.js). It cleans the input the same way as
+`clean_text` in training, runs the model and shows the probability of each class. Nothing typed is sent to a server.
+The first visit downloads the model (~550 MB), then the browser keeps it.
+
+To get there, `app/export_onnx.py` converts the model to ONNX. I compared three sizes on 600 clean-test tweets:
+
+| version | size | same label as full model | accuracy |
+|---|---|---|---|
+| fp32 (full) | 1112 MB | 100% | 0.650 |
+| int8 | 279 MB | 88.5% | 0.632 |
+| **fp16 (used)** | **556 MB** | **100%** | **0.650** |
+
+While testing I found that the browser predictions didn't match Python. transformers v5 saves the tokenizer
+in a newer format that transformers.js reads wrong (words lost their start-of-word marker, so "dis" became a
+different token). Using the base model's tokenizer file (same vocabulary, older format) fixed it. The token ids
+are identical on all 3,228 clean-test tweets, and the browser now matches Python to within 0.1%.
+
+`app/app.py` is a Gradio version for running locally with Python: `python app/app.py`.
+To deploy your own copy: `hf auth login`, then `python export_onnx.py` and `python deploy_space.py` from `app/`.
 
 ## How to reproduce
 
@@ -172,7 +190,7 @@ Then run the notebooks in order:
 | `05_error_analysis.ipynb` | error analysis of the best model | CPU |
 | `06_neutral_oversampling.ipynb` | E9 | GPU, ~10 min |
 
-Run the app locally: `python app/app.py`
+Run the app locally: `python app/app.py` (Gradio), or serve `app/static/` with `python -m http.server`
 
 ## Repo structure
 
@@ -180,7 +198,7 @@ Run the app locally: `python app/app.py`
 src/            data download, cleaning, metrics + experiment log
 notebooks/      01-06, the full workflow
 results/        experiments.csv (every run), figures, predictions used in the error analysis
-app/            gradio app + space deploy script
+app/            browser app (static/index.html), onnx export, space deploy script, local gradio version
 ```
 
 `results/` contains some tweets (predictions for error analysis). These come from AfriSenti and fall under
@@ -190,7 +208,7 @@ the same CC BY-NC-SA licence.
 
 **Used (existing resources):** the AfriSenti dataset; pretrained models RoBERTa, XLM-R, AfroXLMR and
 AfriBERTa from the Hugging Face Hub; libraries scikit-learn, PyTorch, gensim, Hugging Face transformers
-and datasets, Gradio.
+and datasets, Gradio, ONNX Runtime and transformers.js.
 
 **Did myself:** found and handled the train/test leakage and label conflicts, the cleaning pipeline, all
 baselines, the BiLSTM model and training loop, Word2Vec training, the fine-tuning setup with weighted loss,

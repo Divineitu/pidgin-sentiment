@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nigerian Pidgin Sentiment</title>
+<style>
+  :root {
+    --bg: #f6f7f4; --card: #ffffff; --text: #1d211c; --muted: #636b60; --border: #dde1d9;
+    --accent: #1f7a4d; --neg: #c2413a; --neu: #8a8f86; --pos: #1f7a4d;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #151815; --card: #1e221e; --text: #e8ebe6; --muted: #9aa297; --border: #333932;
+      --accent: #4cb882; --neg: #e2665e; --neu: #9aa297; --pos: #4cb882;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+         font: 16px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  main { max-width: 680px; margin: 0 auto; padding: 32px 16px 48px; }
+  h1 { font-size: 1.6rem; margin: 0 0 4px; }
+  .sub { color: var(--muted); margin: 0 0 24px; }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 20px; }
+  textarea { width: 100%; min-height: 90px; resize: vertical; padding: 10px 12px; font: inherit;
+             color: var(--text); background: var(--bg); border: 1px solid var(--border); border-radius: 8px; }
+  textarea:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+  button { font: inherit; cursor: pointer; }
+  #go { margin-top: 12px; padding: 9px 22px; border: 0; border-radius: 8px; background: var(--accent);
+        color: #fff; font-weight: 600; }
+  #go:disabled { opacity: .5; cursor: wait; }
+  #status { color: var(--muted); font-size: .9rem; margin-top: 10px; min-height: 1.4em; }
+  .row { display: grid; grid-template-columns: 80px 1fr 52px; align-items: center; gap: 10px; margin: 8px 0; }
+  .bar { height: 12px; background: var(--border); border-radius: 6px; overflow: hidden; }
+  .fill { height: 100%; width: 0; border-radius: 6px; transition: width .3s; }
+  .pct { text-align: right; font-variant-numeric: tabular-nums; color: var(--muted); }
+  .top { font-weight: 700; }
+  #result { margin-top: 18px; display: none; }
+  #result h2 { font-size: 1.1rem; margin: 0 0 8px; }
+  .examples { margin-top: 20px; }
+  .examples p { margin: 0 0 8px; color: var(--muted); font-size: .9rem; }
+  .ex { display: inline-block; margin: 0 6px 8px 0; padding: 5px 10px; border: 1px solid var(--border);
+        border-radius: 16px; background: var(--card); color: var(--text); font-size: .9rem; text-align: left; }
+  .ex:hover { border-color: var(--accent); }
+  .note { color: var(--muted); font-size: .85rem; margin-top: 24px; }
+  a { color: var(--accent); }
+</style>
+</head>
+<body>
+<main>
+  <h1>Nigerian Pidgin Sentiment</h1>
+  <p class="sub">Type a tweet in Nigerian Pidgin and the model says if it's positive, negative or neutral.</p>
+
+  <div class="card">
+    <label for="text">Tweet</label>
+    <textarea id="text" placeholder="e.g. abeg this jollof sweet die"></textarea>
+    <button id="go" disabled>Classify</button>
+    <div id="status">Loading the model (about 550 MB the first time, then your browser keeps it)...</div>
+
+    <div id="result">
+      <h2>Prediction</h2>
+      <div id="bars"></div>
+    </div>
+  </div>
+
+  <div class="examples">
+    <p>Try one:</p>
+    <div id="examples"></div>
+  </div>
+
+  <p class="note">
+    Model: AfroXLMR-base fine-tuned on the AfriSenti Pidgin tweets
+    (<a href="https://huggingface.co/DivineItu/pidgin-sentiment">model</a>,
+    <a href="https://github.com/Divineitu/pidgin-sentiment">code and report</a>).
+    It runs inside your browser, so nothing you type is sent anywhere.
+    It struggles with neutral tweets, because there were only 66 of them in training.
+  </p>
+</main>
+
+<script type="module">
+import { AutoTokenizer, AutoModelForSequenceClassification }
+  from "https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.7.1";
+
+const MODEL_ID = "DivineItu/pidgin-sentiment";
+const LABELS = ["negative", "neutral", "positive"];
+const COLORS = { negative: "var(--neg)", neutral: "var(--neu)", positive: "var(--pos)" };
+const EXAMPLES = [
+  "abeg this jollof sweet die, i go come back tomorrow",
+  "na wa for this nepa o, light don go again since morning",
+  "i dey go market later",
+  "dis una network no dey work at all, wetin be this",
+  "wahala dey o",
+  "massive love",
+  "no wham na, make i dey go",
+];
+
+// same cleaning as clean_text in src/preprocess.py, so the model sees the same kind of text as in training
+function cleanText(text) {
+  return String(text).toLowerCase()
+    .replace(/[​-‏⁠-⁤︎️]/g, "")
+    .replace(/([\p{L}\p{N}_])\1{2,}/gu, "$1$1")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+const textBox = document.getElementById("text");
+const button = document.getElementById("go");
+const status = document.getElementById("status");
+
+for (const ex of EXAMPLES) {
+  const b = document.createElement("button");
+  b.className = "ex";
+  b.textContent = ex;
+  b.onclick = () => { textBox.value = ex; if (!button.disabled) classify(); };
+  document.getElementById("examples").appendChild(b);
+}
+
+let tokenizer, model;
+try {
+  tokenizer = await AutoTokenizer.from_pretrained(MODEL_ID);
+  model = await AutoModelForSequenceClassification.from_pretrained(MODEL_ID, {
+    dtype: "fp16",
+    progress_callback: (p) => {
+      if (p.status === "progress" && p.file.endsWith(".onnx")) {
+        status.textContent = `Loading the model... ${Math.round(p.progress)}%`;
+      }
+    },
+  });
+  status.textContent = "Model ready.";
+  button.disabled = false;
+} catch (err) {
+  status.textContent = "Couldn't load the model: " + err.message;
+  console.error(err);
+}
+
+async function classify() {
+  const cleaned = cleanText(textBox.value);
+  if (!cleaned) return;
+  button.disabled = true;
+  status.textContent = "Thinking...";
+  // max_length 64 like in training
+  const inputs = await tokenizer(cleaned, { truncation: true, max_length: 64 });
+  const { logits } = await model(inputs);
+  const scores = Array.from(logits.data);
+  const exps = scores.map((s) => Math.exp(s - Math.max(...scores)));
+  const total = exps.reduce((a, b) => a + b, 0);
+  const probs = exps.map((e) => e / total);
+  show(probs);
+  status.textContent = "";
+  button.disabled = false;
+}
+
+function show(probs) {
+  const best = probs.indexOf(Math.max(...probs));
+  const bars = document.getElementById("bars");
+  bars.innerHTML = "";
+  LABELS.forEach((label, i) => {
+    const row = document.createElement("div");
+    row.className = "row" + (i === best ? " top" : "");
+    row.innerHTML = `<span>${label}</span><div class="bar"><div class="fill"></div></div>
+                     <span class="pct">${(probs[i] * 100).toFixed(1)}%</span>`;
+    const fill = row.querySelector(".fill");
+    fill.style.background = COLORS[label];
+    bars.appendChild(row);
+    requestAnimationFrame(() => { fill.style.width = (probs[i] * 100) + "%"; });
+  });
+  document.getElementById("result").style.display = "block";
+}
+
+button.onclick = classify;
+textBox.addEventListener("keydown", (e) => {
+  if (e.key === "Enter" && (e.ctrlKey || e.metaKey) && !button.disabled) classify();
+});
+</script>
+</body>
+</html>

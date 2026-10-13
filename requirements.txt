@@ -12,3 +12,6 @@ accelerate
 nbconvert
 ipykernel
 gradio
+onnx
+onnxruntime
+onnxscript
