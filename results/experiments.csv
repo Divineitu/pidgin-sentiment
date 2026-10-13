@@ -32,3 +32,6 @@ E7,afro-xlmr-base (african),test_official,0.7057,0.4853,0.6667,0.7917,0.0,0.6643
 E8,afriberta-large (african),dev,0.6684,0.4251,0.6643,0.7557,0.0,0.5195,"mean of seeds [42, 1, 7], macro_f1 std=0.0029"
 E8,afriberta-large (african),test_clean,0.6171,0.4298,0.5726,0.7191,0.003,0.5673,"mean of seeds [42, 1, 7], macro_f1 std=0.0012"
 E8,afriberta-large (african),test_official,0.6742,0.4643,0.6385,0.7647,0.0043,0.624,"mean of seeds [42, 1, 7], macro_f1 std=0.0031"
+E9,afro-xlmr-base + neutral oversampled x10,dev,0.6954,0.4579,0.6986,0.771,0.0104,0.5924,"mean of seeds [42, 1, 7], macro_f1 std=0.007"
+E9,afro-xlmr-base + neutral oversampled x10,test_official,0.6928,0.4857,0.6617,0.7812,0.0131,0.6629,"mean of seeds [42, 1, 7], macro_f1 std=0.003"
+E9,afro-xlmr-base + neutral oversampled x10,test_clean,0.6482,0.4599,0.6072,0.7474,0.0095,0.6229,"mean of seeds [42, 1, 7], macro_f1 std=0.0024"

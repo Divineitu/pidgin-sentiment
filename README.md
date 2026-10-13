@@ -92,7 +92,7 @@ Clean test (tweets never seen in training), mean of 3 seeds for E3–E8:
 | E6 | XLM-R-base | 0.640 | 0.449 ± 0.004 | 0.597 | 0.738 | 0.000 | 0.610 |
 | **E7** | **AfroXLMR-base** | **0.664** | **0.464 ± 0.006** | **0.616** | **0.760** | 0.000 | **0.632** |
 | E8 | AfriBERTa-large | 0.617 | 0.430 ± 0.001 | 0.573 | 0.719 | 0.003 | 0.567 |
-| E9 | AfroXLMR + neutral ×10 | _pending_ | | | | | |
+| E9 | AfroXLMR + neutral ×10 | 0.648 | 0.460 ± 0.002 | 0.607 | 0.747 | 0.010 | 0.623 |
 
 Scores on dev and on the official test are in `results/experiments.csv`. Every model scores higher on the
 official test than on the clean test (e.g. E7: 0.485 vs 0.464), which shows the effect of the leakage.
@@ -122,6 +122,10 @@ duplicated tweets are removed.
   words come from English.
 - **"African" alone isn't enough.** AfriBERTa came last among the transformers, about the same as the baseline.
 - **Neutral is never predicted** by any transformer, even with class weights, because 66 examples isn't enough.
+- **Oversampling didn't fix it.** Repeating the neutral tweets 10 times (E9) made the model predict neutral
+  79 times on the clean test, but only 5 of those were really neutral, and macro-F1 went slightly down (0.460 vs
+  0.464). Copies of the same 66 tweets don't teach what neutral looks like in general, so the model just
+  memorises them. Fixing neutral needs more *different* neutral tweets.
 
 ### Error analysis (E7, clean test)
 
