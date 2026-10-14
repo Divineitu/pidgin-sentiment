@@ -148,6 +148,18 @@ Short tweets give it too little context. Common error types: sarcasm, negative-l
 ("no use laugh kill pesin abeg" is positive), Yoruba/Igbo words mixed in, and labels that are arguable.
 See `notebooks/05_error_analysis.ipynb`.
 
+**My own check of 50 errors.** I read a random sample of 50 wrong predictions, gave each one my own label
+(as a Pidgin reader) and wrote down why (`results/error_sample_labelled.csv`):
+
+- I agreed with the dataset label on **45 of 50** and with the model on only 2. So most errors are real model
+  mistakes, not bad labels. Label noise exists but it's small.
+- **21 of the 50 are neutral tweets**: plain statements and questions ("wetin i do", "who has a high end phone
+  to sell for cheap na"). The model has almost never seen neutral, so it forces them into positive or negative.
+- **Humour and hype read as negative**: "by the time beans done who cook indomie go don dey hungry" (a joke),
+  "arnold don dey curse o arnold na actor sha" (praise). Words like *hungry* or *curse* pull the model the wrong way.
+- **Blame and insults in deep Pidgin read as positive**: "you sef why did u gbe idi e si odo ee" (blame, with Yoruba),
+  "look wetin dey free about the promo dem be like mtn" (an insult).
+
 ## Web app
 
 Hugging Face only hosts Gradio Spaces on a paid plan now, but static Spaces are free, so the live app is a
